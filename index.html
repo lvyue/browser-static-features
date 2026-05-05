@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频格式转换 - H264 MP4</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .upload-zone {
+      border: 2px dashed #333;
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #16162a;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .upload-text {
+      font-size: 16px;
+      color: #ccc;
+      margin-bottom: 8px;
+    }
+
+    .upload-hint {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .file-info {
+      display: none;
+      background: #16162a;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 20px;
+    }
+
+    .file-info.show {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-icon {
+      font-size: 32px;
+    }
+
+    .file-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .remove-btn:hover {
+      color: #ef4444;
+    }
+
+    .options {
+      margin-top: 24px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #2a2a3e;
+    }
+
+    .option-row:last-child {
+      border-bottom: none;
+    }
+
+    .option-label {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .option-value {
+      font-size: 14px;
+      color: #6366f1;
+      font-weight: 500;
+    }
+
+    .source-badge {
+      display: inline-block;
+      font-size: 11px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 24px;
+    }
+
+    .btn-convert {
+      background: #6366f1;
+      color: #fff;
+    }
+
+    .btn-convert:hover:not(:disabled) {
+      background: #5558e3;
+    }
+
+    .btn-convert:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-download {
+      background: #10b981;
+      color: #fff;
+      display: none;
+    }
+
+    .btn-download:hover {
+      background: #0ea271;
+    }
+
+    .btn-download.show {
+      display: block;
+    }
+
+    .progress-container {
+      display: none;
+      margin-top: 24px;
+    }
+
+    .progress-container.show {
+      display: block;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #2a2a3e;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      margin-top: 12px;
+    }
+
+    .status.error {
+      color: #ef4444;
+    }
+
+    .status.success {
+      color: #10b981;
+    }
+
+    .output-info {
+      display: none;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .output-info.show {
+      display: block;
+    }
+
+    .output-info .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .output-info .text {
+      font-size: 14px;
+      color: #10b981;
+    }
+
+    .output-info .size {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* 高级选项 */
+    .advanced-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      margin-top: 16px;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .advanced-toggle:hover {
+      color: #999;
+    }
+
+    .advanced-toggle .arrow {
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+
+    .advanced-toggle.open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .advanced-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      background: #16162a;
+      border-radius: 8px;
+      border: 1px solid #2a2a3e;
+    }
+
+    .advanced-panel.show {
+      display: block;
+    }
+
+    .bitrate-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .bitrate-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .bitrate-label {
+      font-size: 13px;
+      color: #888;
+      width: 70px;
+      flex-shrink: 0;
+    }
+
+    .bitrate-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1a2e;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      border-color: #6366f1;
+      color: #ccc;
+    }
+
+    .preset-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: #6366f1;
+      color: #818cf8;
+    }
+
+    .preset-btn.auto-btn.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    .bitrate-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bitrate-input {
+      width: 64px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .bitrate-input:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    .bitrate-unit {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .bitrate-source {
+      font-size: 11px;
+      color: #10b981;
+      margin-left: 4px;
+    }
+
+    .probe-status {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .probe-status.active {
+      color: #6366f1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 视频格式转换</h1>
+    <p class="subtitle">浏览器端转换，无需上传 · H264 MP4 兼容所有平台</p>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="video/*">
+      <div class="upload-icon">📹</div>
+      <div class="upload-text">点击或拖拽视频文件到这里</div>
+      <div class="upload-hint">支持 mp4, webm, avi, mkv, mov, flv 等格式</div>
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <div class="file-icon">🎞️</div>
+      <div class="file-details">
+        <div class="file-name" id="fileName">-</div>
+        <div class="file-size" id="fileSize">-</div>
+      </div>
+      <button class="remove-btn" id="removeBtn">✕</button>
+    </div>
+
+    <div class="options">
+      <div class="option-row">
+        <span class="option-label">输入格式</span>
+        <span class="option-value" id="inputFormat">-</span>
+      </div>
+      <div class="option-row">
+        <span class="option-label">输出格式</span>
+        <span class="option-value">H264 MP4</span>
+      </div>
+      <div class="option-row">
+        <span class="option-label">视频码率</span>
+        <span class="option-value" id="videoBitrateDisplay">2M</span>
+      </div>
+      <div class="option-row">
+        <span class="option-label">音频码率</span>
+        <span class="option-value" id="audioBitrateDisplay">128k</span>
+      </div>
+    </div>
+
+    <div class="probe-status" id="probeStatus"></div>
+
+    <div class="advanced-toggle" id="advancedToggle">
+      <span class="arrow">▼</span>
+      高级选项（码率调整）
+    </div>
+
+    <div class="advanced-panel" id="advancedPanel">
+      <div class="bitrate-row">
+        <span class="bitrate-label">视频码率</span>
+        <div class="bitrate-presets">
+          <button class="preset-btn auto-btn" data-type="video" data-value="auto">自动</button>
+          <button class="preset-btn" data-type="video" data-value="1M">1M</button>
+          <button class="preset-btn" data-type="video" data-value="2M">2M</button>
+          <button class="preset-btn" data-type="video" data-value="4M">4M</button>
+          <button class="preset-btn" data-type="video" data-value="8M">8M</button>
+        </div>
+        <div class="bitrate-input-wrap">
+          <input type="number" class="bitrate-input" id="videoBitrateInput" value="2" min="0.1" max="50" step="0.5">
+          <span class="bitrate-unit">M</span>
+        </div>
+      </div>
+      <div class="bitrate-row">
+        <span class="bitrate-label">音频码率</span>
+        <div class="bitrate-presets">
+          <button class="preset-btn" data-type="audio" data-value="64k">64k</button>
+          <button class="preset-btn" data-type="audio" data-value="128k">128k</button>
+          <button class="preset-btn active" data-type="audio" data-value="192k">192k</button>
+          <button class="preset-btn" data-type="audio" data-value="256k">256k</button>
+          <button class="preset-btn" data-type="audio" data-value="320k">320k</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-convert" id="convertBtn" disabled>开始转换</button>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-label">
+        <span>转换进度</span>
+        <span id="progressText">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="status" id="statusText">正在加载 ffmpeg.wasm...</div>
+    </div>
+
+    <button class="btn btn-download" id="downloadBtn">下载转换后的视频</button>
+
+    <div class="output-info" id="outputInfo">
+      <div class="icon">✅</div>
+      <div class="text">转换完成！</div>
+      <div class="size" id="outputSize">-</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.10';
+    import { fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1';
+
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeBtn = document.getElementById('removeBtn');
+    const inputFormat = document.getElementById('inputFormat');
+    const videoBitrateDisplay = document.getElementById('videoBitrateDisplay');
+    const audioBitrateDisplay = document.getElementById('audioBitrateDisplay');
+    const convertBtn = document.getElementById('convertBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const statusText = document.getElementById('statusText');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const outputInfo = document.getElementById('outputInfo');
+    const outputSize = document.getElementById('outputSize');
+    const advancedToggle = document.getElementById('advancedToggle');
+    const advancedPanel = document.getElementById('advancedPanel');
+    const videoBitrateInput = document.getElementById('videoBitrateInput');
+    const probeStatus = document.getElementById('probeStatus');
+
+    let selectedFile = null;
+    let outputBlob = null;
+    let outputFilename = '';
+    let ffmpeg = null;
+
+    // 码率状态
+    let videoBitrate = '2M';         // 当前使用的视频码率
+    let audioBitrate = '192k';       // 当前使用的音频码率
+    let detectedVideoBitrate = null; // 探针检测到的源码码率
+    let detectedAudioBitrate = null;
+    let useAutoVideoBitrate = false; // 是否使用自动码率
+
+    // 初始化 FFmpeg
+    async function initFFmpeg() {
+      if (ffmpeg) return ffmpeg;
+      ffmpeg = new FFmpeg();
+      await ffmpeg.load();
+      return ffmpeg;
+    }
+
+    // 文件大小格式化
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+
+    // 获取文件扩展名
+    function getExtension(filename) {
+      return '.' + filename.split('.').pop().toLowerCase();
+    }
+
+    // 探测源文件信息
+    async function probeSource(file) {
+      const ff = await initFFmpeg();
+      const inputName = 'probe_' + Math.random().toString(36).slice(2) + getExtension(file.name);
+
+      try {
+        const fileData = await fetchFile(file);
+        await ff.writeFile(inputName, fileData);
+
+        // 用 ffmpeg 探测
+        await ff.exec(['-i', inputName]);
+
+      } catch (e) {
+        // ffmpeg 探测会报错，报错信息里包含我们需要的信息
+      }
+
+      let videoBitrate = null;
+      let audioBitrate = null;
+      let duration = 0;
+
+      try {
+        const { stderr } = await ff.exec([
+          '-i', inputName,
+          '-v', 'quiet',
+          '-print_format', 'json',
+          '-show_format', '-show_streams',
+        ]);
+
+        const output = stderr || '';
+
+        // 解析时长
+        const durationMatch = output.match(/"duration":\s*"?([\d.]+)"?/);
+        if (durationMatch) {
+          duration = parseFloat(durationMatch[1]);
+        }
+
+        // 解析视频码率
+        const vbMatch = output.match(/bit_rate:\s*"?(\d+)"?/);
+        if (vbMatch) {
+          const bps = parseInt(vbMatch[1]);
+          if (bps > 0) {
+            videoBitrate = bpsToFFmpegBitrate(bps);
+          }
+        }
+
+        // 解析音频码率
+        const abMatch = output.match(/audio,\s*\S+\s*\([^)]+\)[^,]*,\s*(\d+)\s*kb\/s/);
+        if (abMatch) {
+          audioBitrate = parseInt(abMatch[1]) + 'k';
+        }
+
+        // 如果没找到码率，用文件大小/时长估算
+        if (!videoBitrate && duration > 0 && file.size > 0) {
+          const estimatedBps = Math.round((file.size * 8) / duration);
+          videoBitrate = bpsToFFmpegBitrate(estimatedBps);
+        }
+
+      } catch (e) {
+        // probe 失败，用备用方案
+        console.warn('Probe parse failed, using fallback:', e.message);
+      }
+
+      // 备用：直接从文件信息估算
+      if (!videoBitrate) {
+        const videoEl = document.createElement('video');
+        videoEl.src = URL.createObjectURL(file);
+        await new Promise((resolve) => {
+          videoEl.addEventListener('loadedmetadata', resolve, { once: true });
+          videoEl.addEventListener('error', resolve, { once: true });
+          setTimeout(resolve, 5000);
+        });
+        if (videoEl.duration && file.size > 0) {
+          const estimatedBps = Math.round((file.size * 8) / videoEl.duration);
+          videoBitrate = bpsToFFmpegBitrate(estimatedBps);
+          duration = videoEl.duration;
+        }
+        URL.revokeObjectURL(videoEl.src);
+      }
+
+      try {
+        await ff.deleteFile(inputName);
+      } catch (e) { /* ignore */ }
+
+      return { videoBitrate, audioBitrate, duration };
+    }
+
+    // bps -> ffmpeg 码率字符串
+    function bpsToFFmpegBitrate(bps) {
+      if (bps >= 1_000_000) {
+        return Math.round(bps / 1_000_000) + 'M';
+      } else if (bps >= 1000) {
+        return Math.round(bps / 1000) + 'k';
+      }
+      return bps + 'b';
+    }
+
+    // 更新码率显示
+    function updateBitrateDisplays() {
+      const vb = useAutoVideoBitrate && detectedVideoBitrate ? detectedVideoBitrate : videoBitrate;
+      videoBitrateDisplay.textContent = vb + (useAutoVideoBitrate && detectedVideoBitrate ? ' (自动)' : '');
+      audioBitrateDisplay.textContent = audioBitrate;
+    }
+
+    // 转换视频为 H264 MP4
+    async function convertVideo(file, onProgress) {
+      const ff = await initFFmpeg();
+      const inputName = 'input' + getExtension(file.name);
+      const outputName = 'output.mp4';
+
+      ff.on('progress', ({ progress }) => {
+        onProgress?.(Math.round(progress * 100));
+      });
+
+      // 写入输入文件
+      const fileData = await fetchFile(file);
+      await ff.writeFile(inputName, fileData);
+
+      // 决定最终使用的码率
+      const finalVideoBitrate = useAutoVideoBitrate && detectedVideoBitrate ? detectedVideoBitrate : videoBitrate;
+
+      // H264 MP4 转码参数
+      await ff.exec([
+        '-i', inputName,
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-crf', '23',
+        '-b:v', finalVideoBitrate,
+        '-c:a', 'aac',
+        '-b:a', audioBitrate,
+        '-movflags', '+faststart',
+        '-pix_fmt', 'yuv420p',
+        outputName,
+      ]);
+
+      // 读取输出
+      const data = await ff.readFile(outputName);
+      const blob = new Blob([data.buffer], { type: 'video/mp4' });
+
+      // 清理
+      await ff.deleteFile(inputName);
+      await ff.deleteFile(outputName);
+
+      return { blob };
+    }
+
+    // 选择文件
+    async function selectFile(file) {
+      if (!file || !file.type.startsWith('video/')) {
+        alert('请选择视频文件');
+        return;
+      }
+
+      selectedFile = file;
+      fileName.textContent = file.name;
+      fileSize.textContent = formatSize(file.size);
+      inputFormat.textContent = getExtension(file.name).replace('.', '').toUpperCase();
+
+      fileInfo.classList.add('show');
+      convertBtn.disabled = false;
+
+      // 重置状态
+      progressContainer.classList.remove('show');
+      downloadBtn.classList.remove('show');
+      outputInfo.classList.remove('show');
+      outputBlob = null;
+      detectedVideoBitrate = null;
+      detectedAudioBitrate = null;
+      useAutoVideoBitrate = false;
+
+      // 重置高级选项 UI
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === 'video' && btn.dataset.value === '2M') {
+          btn.classList.add('active');
+        }
+        if (btn.dataset.type === 'audio' && btn.dataset.value === '192k') {
+          btn.classList.add('active');
+        }
+      });
+      videoBitrateInput.value = 2;
+      videoBitrate = '2M';
+      audioBitrate = '192k';
+      useAutoVideoBitrate = false;
+
+      updateBitrateDisplays();
+
+      // 开始探测源码码率
+      probeStatus.textContent = '正在探测源码信息...';
+      probeStatus.className = 'probe-status active';
+
+      try {
+        const probe = await probeSource(file);
+        if (probe.videoBitrate) {
+          detectedVideoBitrate = probe.videoBitrate;
+          probeStatus.textContent = `检测到源码码率: 视频${probe.videoBitrate} · 音频${probe.audioBitrate || '未知'}`;
+          probeStatus.className = 'probe-status';
+
+          // 自动模式：使用检测到的码率
+          useAutoVideoBitrate = true;
+          updateBitrateDisplays();
+
+          // 更新预设按钮
+          document.querySelectorAll('.preset-btn[data-type="video"]').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.value === 'auto') {
+              btn.classList.add('active');
+            }
+          });
+        } else {
+          probeStatus.textContent = '无法检测源码码率，将使用手动码率';
+          probeStatus.className = 'probe-status';
+        }
+      } catch (e) {
+        probeStatus.textContent = '探测失败，使用默认码率';
+        probeStatus.className = 'probe-status';
+      }
+    }
+
+    // 上传区域点击
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    // 拖拽
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      selectFile(file);
+    });
+
+    // 文件选择
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      selectFile(file);
+    });
+
+    // 移除文件
+    removeBtn.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileInfo.classList.remove('show');
+      convertBtn.disabled = true;
+      progressContainer.classList.remove('show');
+      downloadBtn.classList.remove('show');
+      outputInfo.classList.remove('show');
+      probeStatus.textContent = '';
+      probeStatus.className = 'probe-status';
+    });
+
+    // 高级选项展开/收起
+    advancedToggle.addEventListener('click', () => {
+      advancedToggle.classList.toggle('open');
+      advancedPanel.classList.toggle('show');
+    });
+
+    // 码率预设按钮
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        const value = btn.dataset.value;
+
+        // 更新同组按钮状态
+        document.querySelectorAll(`.preset-btn[data-type="${type}"]`).forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+
+        if (type === 'video') {
+          if (value === 'auto') {
+            useAutoVideoBitrate = true;
+            videoBitrate = detectedVideoBitrate || '2M';
+          } else {
+            useAutoVideoBitrate = false;
+            videoBitrate = value;
+            videoBitrateInput.value = parseFloat(value);
+          }
+        } else if (type === 'audio') {
+          audioBitrate = value;
+        }
+
+        updateBitrateDisplays();
+      });
+    });
+
+    // 视频码率手动输入
+    videoBitrateInput.addEventListener('change', () => {
+      const val = parseFloat(videoBitrateInput.value);
+      if (val > 0) {
+        videoBitrate = val + 'M';
+        useAutoVideoBitrate = false;
+
+        // 更新预设按钮高亮
+        document.querySelectorAll('.preset-btn[data-type="video"]').forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.dataset.value === videoBitrate) {
+            btn.classList.add('active');
+          }
+        });
+
+        updateBitrateDisplays();
+      }
+    });
+
+    // 开始转换
+    convertBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      progressContainer.classList.add('show');
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+      statusText.textContent = '正在加载 ffmpeg.wasm...';
+      statusText.className = 'status';
+      convertBtn.disabled = true;
+      downloadBtn.classList.remove('show');
+      outputInfo.classList.remove('show');
+
+      try {
+        const finalVb = useAutoVideoBitrate && detectedVideoBitrate ? detectedVideoBitrate : videoBitrate;
+        statusText.textContent = `转换中 (视频${finalVb} / 音频${audioBitrate})...`;
+
+        const result = await convertVideo(selectedFile, (percent) => {
+          progressFill.style.width = percent + '%';
+          progressText.textContent = percent + '%';
+          statusText.textContent = `转换中 (视频${finalVb} / 音频${audioBitrate})... ${percent}%`;
+        });
+
+        outputBlob = result.blob;
+        outputFilename = selectedFile.name.replace(/\.[^.]+$/, '.mp4');
+
+        progressFill.style.width = '100%';
+        progressText.textContent = '100%';
+        statusText.textContent = '转换完成！';
+        statusText.className = 'status success';
+        outputSize.textContent = '输出大小: ' + formatSize(result.blob.size);
+        outputInfo.classList.add('show');
+        downloadBtn.classList.add('show');
+
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = '转换失败: ' + err.message;
+        statusText.className = 'status error';
+      } finally {
+        convertBtn.disabled = false;
+      }
+    });
+
+    // 下载
+    downloadBtn.addEventListener('click', () => {
+      if (!outputBlob) return;
+
+      const url = URL.createObjectURL(outputBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outputFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
